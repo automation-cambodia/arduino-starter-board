@@ -42,7 +42,7 @@ void setup()
 {
  Serial.begin(9600);
 Serial.println("Starting test ...");
-lcd.begin(16, 2);
+lcd.begin();
 lcd.clear();
 lcd.print("Test Only");
 

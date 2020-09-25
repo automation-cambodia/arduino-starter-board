@@ -1,62 +1,65 @@
-/*  7 segment display MAX7219 driver serial control
- Schematic: https://www.electronoobs.com/eng_arduino_tut54_sch1.php
- Code: https://www.electronoobs.com/eng_arduino_tut54_code1.php
-*/
+//We always have to include the library
+#include "LedControl.h"
 
-#define MAX7219_Data_IN 35
-#define MAX7219_Chip_Select  36
-#define MAX7219_Clock 34
+LedControl lc=LedControl(35,34,36,1); // DATA_PIN, CLK_PIN, LOAD_PIN
 
-byte adr = 0x08;
-byte num = 0x00;
-int i = 0;
-
-void shift(byte send_to_address, byte send_this_data)
-{
-  digitalWrite(MAX7219_Chip_Select, LOW);
-  shiftOut(MAX7219_Data_IN, MAX7219_Clock, MSBFIRST, send_to_address);
-  shiftOut(MAX7219_Data_IN, MAX7219_Clock, MSBFIRST, send_this_data);
-  digitalWrite(MAX7219_Chip_Select, HIGH);
-}
-
-
-
+/* we always wait a bit between updates of the display */
+unsigned long delaytime=250;
 
 void setup() {
-  pinMode(MAX7219_Data_IN, OUTPUT);
-  pinMode(MAX7219_Chip_Select, OUTPUT);
-  pinMode(MAX7219_Clock, OUTPUT);
-  digitalWrite(MAX7219_Clock, HIGH);
-  delay(200);
-
-  //Setup of MAX7219 chip
-  shift(0x0f, 0x00); //display test register - test mode off
-  shift(0x0c, 0x01); //shutdown register - normal operation
-  shift(0x0b, 0x07); //scan limit register - display digits 0 thru 7
-  shift(0x0a, 0x0f); //intensity register - max brightness
-  shift(0x09, 0xff); //decode mode register - CodeB decode all digits
-
+  /*
+   The MAX72XX is in power-saving mode on startup,
+   we have to do a wakeup call
+   */
+  lc.shutdown(0,false);
+  /* Set the brightness to a medium values */
+  lc.setIntensity(0,8);
+  /* and clear the display */
+  lc.clearDisplay(0);
 }
 
-void loop() {
-  
-  //Data transfer
-  shift(0x08, 0x00); //digit 7 (leftmost digit) data
-  shift(0x07, 0x01);
-  shift(0x06, 0x02);
-  shift(0x05, 0x03);
-  shift(0x04, 0x04);
-  shift(0x03, 0x05);
-  shift(0x02, 0x06);
-  shift(0x01, 0x07); //digit 0 (rightmost digit) data
-  delay(1000);
-  shift(0x08, 0x07); //digit 7 (leftmost digit) data
-  shift(0x07, 0x06);
-  shift(0x06, 0x05);
-  shift(0x05, 0x04);
-  shift(0x04, 0x03);
-  shift(0x03, 0x02);
-  shift(0x02, 0x01);
-  shift(0x01, 0x00); //digit 0 (rightmost digit) data
-  delay(1000);
+
+/*
+ This method will display the characters for the
+ word "Arduino" one after the other on digit 0. 
+ */
+void writeArduinoOn7Segment() {
+  lc.setChar(0,0,'a',false);
+  delay(delaytime);
+  lc.setRow(0,0,0x05);
+  delay(delaytime);
+  lc.setChar(0,0,'d',false);
+  delay(delaytime);
+  lc.setRow(0,0,0x1c);
+  delay(delaytime);
+  lc.setRow(0,0,B00010000);
+  delay(delaytime);
+  lc.setRow(0,0,0x15);
+  delay(delaytime);
+  lc.setRow(0,0,0x1D);
+  delay(delaytime);
+  lc.clearDisplay(0);
+  delay(delaytime);
+} 
+
+/*
+  This method will scroll all the hexa-decimal
+ numbers and letters on the display. You will need at least
+ four 7-Segment digits. otherwise it won't really look that good.
+ */
+void scrollDigits() {
+  for(int i=0;i<7;i++) {
+    lc.setDigit(0,3,i,false);
+    lc.setDigit(0,2,i+1,false);
+    lc.setDigit(0,1,i+2,false);
+    lc.setDigit(0,0,i+3,false);
+    delay(delaytime);
+  }
+  lc.clearDisplay(0);
+  delay(delaytime);
+}
+
+void loop() { 
+  //writeArduinoOn7Segment();
+  scrollDigits();
 }
